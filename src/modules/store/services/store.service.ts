@@ -6,7 +6,7 @@ import { EntityEventType, Service, MedusaEventHandlerParams, OnMedusaEntityEvent
 import { User } from "../../user/entities/user.entity";
 import EventBusService from "@medusajs/medusa/dist/services/event-bus";
 import StoreRepository from "../repositories/store.repository";
-import { TransactionBaseService } from "@medusajs/medusa";
+import { FindConfig } from "@medusajs/medusa/dist/types/common";
 
 interface ConstructorParams {
   loggedInUser: User;
@@ -53,24 +53,25 @@ export default class StoreService extends MedusaStoreService {
     return event;
   }
 
-  // public async retrieve(relations: string[] = []) {
-  //   if (!this.container.loggedInUser) {
-  //     return super.retrieve(relations);
-  //   }
+  async retrieve(config?: FindConfig<Store>): Promise<Store> {
+    // if (!this.container.loggedInUser) {
+    //   return super.retrieve(config);
+    // }
 
-  //   const storeRepo = this.manager.getCustomRepository(this.storeRepository);
-  //   const store = await storeRepo.findOne({
-  //     relations,
-  //     join: { alias: 'store', innerJoin: { members: 'store.members' } },
-  //     where: (qb) => {
-  //       qb.where('members.id = :memberId', { memberId: this.container.loggedInUser.id });
-  //     }
-  //   });
+    console.log("RETRIEVE METHOD IN STORE SERVICE");
 
-  //   if (!store) {
-  //     throw new Error('Unable to find the user store');
-  //   }
+    const storeRepo = this.manager.getCustomRepository(this.storeRepository);
+    const store = await storeRepo.findOne({
+      join: { alias: 'store', innerJoin: { members: 'store.members' } },
+      where: (qb) => {
+        qb.where('members.id = :memberId', { memberId: this.container.loggedInUser.id });
+      }
+    });
 
-  //   return store;
-  // }
+    if (!store) {
+      throw new Error('Unable to find the user store');
+    }
+
+    return store;
+  }
 }

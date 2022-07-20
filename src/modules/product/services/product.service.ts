@@ -1,13 +1,13 @@
-import { Service } from "medusa-extender";
+import { Service, OnMedusaEntityEvent, EntityEventType, MedusaEventHandlerParams, } from "medusa-extender";
 import { EntityManager } from "typeorm";
 import { ProductService as MedusaProductService } from "@medusajs/medusa/dist/services";
 import { Product } from '../entities/product.entity';
 import { User } from "../../user/entities/user.entity";
 import UserService from "../../user/services/user.service";
-import { FindWithoutRelationsOptions } from "@medusajs/medusa/dist/repositories/product";
+// import { FindWithoutRelationsOptions } from "@medusajs/medusa/dist/repositories/product";
 import { Selector } from "@medusajs/medusa/dist/types/common";
 import { FilterableProductProps, FindProductConfig } from "@medusajs/medusa/dist/types/product";
-import ProductRepository from '../repositories/product.repository';
+// import ProductRepository from '../repositories/product.repository';
 import ProductVariantService from '@medusajs/medusa/dist/services/product-variant';
 import { ProductVariantRepository } from '@medusajs/medusa/dist/repositories/product-variant';
 import { ProductOptionRepository } from '@medusajs/medusa/dist/repositories/product-option';
@@ -17,6 +17,8 @@ import { ProductTypeRepository } from '@medusajs/medusa/dist/repositories/produc
 import { ProductTagRepository } from '@medusajs/medusa/dist/repositories/product-tag';
 import { ImageRepository } from '@medusajs/medusa/dist/repositories/image';
 import DefaultSearchService from '@medusajs/medusa/dist/services/search';
+import ProductRepository from '../repositories/product.repository';
+
 
 interface ConstructorParams<TSearchService extends DefaultSearchService = DefaultSearchService> {
   manager: EntityManager;
@@ -46,17 +48,20 @@ export class ProductService extends MedusaProductService {
   protected prepareListQuery_(
     selector: FilterableProductProps | Selector<Product>,
     config: FindProductConfig
-  ): {
-    q: string;
-    relations: (keyof Product)[];
-    query: FindWithoutRelationsOptions;
-  } {
-    const loggedInUser = this.container.loggedInUser;
-    if (loggedInUser) {
-      selector['store_id'] = loggedInUser.store_id;
+  ) {
+    if (Object.keys(this.container).includes('loggedInUser')) {
+      selector['store_id'] = this.container.loggedInUser.store_id;
     }
-
     return super.prepareListQuery_(selector, config);
   }
 
+  @OnMedusaEntityEvent.Before.Insert(Product, { async: true })
+  public async attachStoreToProduct(
+    params: MedusaEventHandlerParams<Product, 'Insert'>
+  ): Promise<EntityEventType<Product, 'Insert'>> {
+    const { event } = params;
+    const loggedInUser = this.container.loggedInUser;
+    event.entity.store_id = loggedInUser.store_id;
+    return event;
+  }
 }

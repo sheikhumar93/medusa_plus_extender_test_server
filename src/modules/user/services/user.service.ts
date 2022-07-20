@@ -6,6 +6,7 @@ import { UserService as MedusaUserService } from '@medusajs/medusa/dist/services
 import { User } from '../entities/user.entity';
 import UserRepository from "../repositories/user.repository";
 import { MedusaError } from 'medusa-core-utils';
+import { buildQuery, validateId } from '@medusajs/medusa/dist/utils';
 
 type ConstructorParams = {
   manager: EntityManager;
@@ -27,17 +28,14 @@ export default class UserService extends MedusaUserService {
   }
 
   public async retrieve(userId: string, config?: FindConfig<User>): Promise<User> {
-    console.log(userId, config);
     const userRepo = this.manager.getCustomRepository(this.userRepository);
-    // const validatedId = this.validateId_(userId);
-    // const query = this.buildQuery_({ id: validatedId }, config);
+    const validatedId = validateId(userId);
+    const query = buildQuery({ id: validatedId }, config);
 
-    const user = await userRepo.findOne();
-
+    const user = await userRepo.findOne(query);
     if (!user) {
       throw new MedusaError(MedusaError.Types.NOT_FOUND, `User with id: {userId} was not found`);
     }
-
     return user as User;
   }
 }
